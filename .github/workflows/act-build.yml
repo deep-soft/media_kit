@@ -1,4 +1,4 @@
-# 2023-06-25 19:00
+# 2023-06-25 20:00
 
 name: act - build
 
@@ -205,8 +205,108 @@ jobs:
             ${{ env.ASSET_REL }}
             ${{ env.ZIP_RELEASE_ARCHIVE }}
             ${{ env.WORK_DIR }}/_tag_name_.txt
-
 # zip release end
+
+  optional-libs-windows:
+    name: Windows (optional libs)
+    if: ${{ inputs.windows }}
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: media_kit_test
+
+    steps:
+      - name: Checkout source code
+        uses: deep-soft/checkout@v3
+        with:
+          submodules: "true"
+
+# - get ref set build begin
+      - name: Get ref, set build version
+        shell: bash
+        run: |
+          _ref_all_=$(git log -1 --format='%H')
+          # _ref_=$(echo ${_ref_all_::7})
+          _date_=$(date +%Y%m%dT%H%M%S)
+          _ref_org_=${{ env.TAG_REF }}
+          _ref_len_="${#_ref_org_}"
+          _ref_=$(echo ${_ref_all_::$_ref_len_})
+          echo "TAG_REF=$_ref_" >> $GITHUB_ENV
+          _build_=${{ env.TAG_BUILD }}-$_date_-$_ref_
+          echo "TAG_BUILD=$_build_" >> $GITHUB_ENV
+          echo "WORK_DIR=$(pwd)" >> $GITHUB_ENV
+          echo "TAG_DATE=$_date_" >> $GITHUB_ENV
+
+      - name: Print ref, build version
+        shell: bash
+        run: |
+          echo "REF: ${{ env.TAG_REF }}
+          echo "BLD: ${{ env.TAG_BUILD }}
+          echo "${{ env.TAG_NAME }}-${{ env.TAG_BUILD }}" > _tag_name_.txt
+
+      - name: Install flutter
+        uses: deep-soft/flutter-action@v2
+        with:
+          channel: "stable"
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Remove `media_kit_libs_*` dependencies
+        shell: cmd
+        run: |
+          "C:\Program Files\Git\usr\bin\sed.exe" -i "/media_kit_libs_/d" pubspec.yaml
+          type pubspec.yaml
+
+      - name: flutter pub get
+        shell: bash
+        run: |
+          flutter pub get
+
+      - name: flutter build windows
+        shell: bash
+        run: |
+          flutter build windows --verbose
+
+###
+# zip release begin
+      - name: Create Archive Release
+        uses: deep-soft/zip-release@v2
+        with:
+          type: 'zip'
+          filename: '${{ env.TAG_NAME }}-${{ env.VERSION }}-no-lib-deps.zip'
+          directory: 'media_kit_test/build/windows/runner/Release'
+          path: '.'
+          exclusions: '*.git* /*node_modules/* .editorconfig'
+          # archive name is ${{ env.ZIP_RELEASE_ARCHIVE }}
+
+      - name: print env value
+        shell: bash
+        run: |
+          echo "env.ZIP_RELEASE_ARCHIVE=${{ env.ZIP_RELEASE_ARCHIVE }}"
+
+      - name: Publish Release
+        continue-on-error: true
+        uses: deep-soft/action-gh-release@v1
+        with:
+          draft: true
+          tag_name: ${{ env.TAG_NAME }}-${{ github.job }}
+          files: |
+            ${{ env.ASSET_REL }}
+            ${{ env.ZIP_RELEASE_ARCHIVE }}
+            ${{ env.WORK_DIR }}/_tag_name_.txt
+
+      - name: Publish Release
+        continue-on-error: true
+        uses: deep-soft/action-gh-release@v1
+        with:
+          draft: true
+          tag_name: ${{ env.TAG_VERSION }}${{ env.TAG_BUILD }}
+          files: |
+            ${{ env.ASSET_REL }}
+            ${{ env.ZIP_RELEASE_ARCHIVE }}
+            ${{ env.WORK_DIR }}/_tag_name_.txt
+# zip release end
+
 
   linux:
     name: Linux
@@ -339,27 +439,6 @@ jobs:
             media_kit_test/build/app/outputs/flutter-apk/media_kit_test_android-armeabi-v7a.apk
             media_kit_test/build/app/outputs/flutter-apk/media_kit_test_android-arm64-v8a.apk
             media_kit_test/build/app/outputs/flutter-apk/media_kit_test_android-x86_64.apk
-  optional-libs-windows:
-    name: Windows (optional libs)
-    if: ${{ inputs.windows }}
-    runs-on: windows-latest
-    defaults:
-      run:
-        working-directory: media_kit_test
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: "true"
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: "stable"
-      - name: Remove `media_kit_libs_*` dependencies
-        run: |
-          "C:\Program Files\Git\usr\bin\sed.exe" -i "/media_kit_libs_/d" pubspec.yaml
-          type pubspec.yaml
-        shell: cmd
-      - run: flutter pub get
-      - run: flutter build windows --verbose
 
   optional-libs-linux:
     name: Linux (optional libs)
