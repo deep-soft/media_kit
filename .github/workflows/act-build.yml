@@ -13,22 +13,10 @@ on:
         type: boolean
         required: true
         default: true
-      # if: ${{ inputs.optional-libs-windows }}
-      optional-libs-windows:
-        description: optional-libs-windows
-        type: boolean
-        required: true
-        default: true
 
       # if: ${{ inputs.android }}
       android:
         description: android
-        type: boolean
-        required: true
-        default: true
-      # if: ${{ inputs.optional-libs-android }}
-      optional-libs-android:
-        description: optional-libs-android
         type: boolean
         required: true
         default: true
@@ -39,29 +27,10 @@ on:
         type: boolean
         required: true
         default: false
-      # if: ${{ inputs.optional-libs-linux }}
-      optional-libs-linux:
-        description: optional-libs-linux
-        type: boolean
-        required: true
-        default: false
-
-      # if: ${{ inputs.media_kit-tests-linux }}
-      media_kit-tests-linux:
-        description: media_kit-tests-linux
-        type: boolean
-        required: true
-        default: false
 
       # if: ${{ inputs.macos }}
       macos:
         description: macos
-        type: boolean
-        required: true
-        default: false
-      # if: ${{ inputs.optional-libs-macos }}
-      optional-libs-macos:
-        description: optional-libs-macos
         type: boolean
         required: true
         default: false
@@ -72,9 +41,10 @@ on:
         type: boolean
         required: true
         default: false
-      # if: ${{ inputs.optional-libs-ios }}
-      optional-libs-ios:
-        description: optional-libs-ios
+
+      # if: ${{ inputs.media_kit-tests-linux }}
+      media_kit-tests-linux:
+        description: media_kit-tests-linux
         type: boolean
         required: true
         default: false
@@ -302,7 +272,7 @@ jobs:
 
   optional-libs-windows:
     name: Windows (optional libs)
-    if: ${{ inputs.optional-libs-windows }}
+    if: ${{ inputs.windows }}
     runs-on: windows-latest
     defaults:
       run:
@@ -324,7 +294,7 @@ jobs:
 
   optional-libs-linux:
     name: Linux (optional libs)
-    if: ${{ inputs.optional-libs-linux }}
+    if: ${{ inputs.linux }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -347,7 +317,7 @@ jobs:
 
   optional-libs-macos:
     name: macOS (optional libs)
-    if: ${{ inputs.optional-libs-macos }}
+    if: ${{ inputs.macos }}
     runs-on: macos-latest
     defaults:
       run:
@@ -368,7 +338,7 @@ jobs:
 
   optional-libs-ios:
     name: iOS (optional libs)
-    if: ${{ inputs.optional-libs-ios }}
+    if: ${{ inputs.ios }}
     runs-on: macos-latest
     defaults:
       run:
@@ -389,7 +359,7 @@ jobs:
 
   optional-libs-android:
     name: Android (optional libs)
-    if: ${{ inputs.optional-libs-android }}
+    if: ${{ inputs.android }}
     runs-on: ubuntu-latest
     defaults:
       run:
