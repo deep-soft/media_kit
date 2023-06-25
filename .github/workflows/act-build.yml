@@ -272,8 +272,8 @@ jobs:
       - name: Create Archive Release
         uses: deep-soft/zip-release@v2
         with:
-          type: 'zip'
-          filename: '${{ env.TAG_NAME }}-${{ env.VERSION }}-no-lib-deps.zip'
+          type: '7z'
+          filename: '${{ env.TAG_NAME }}-${{ env.VERSION }}-no-lib-deps.7z'
           directory: 'media_kit_test/build/windows/runner/Release'
           path: '.'
           exclusions: '*.git* /*node_modules/* .editorconfig'
