@@ -19,7 +19,7 @@ on:
         description: android
         type: boolean
         required: true
-        default: true
+        default: false
 
       # if: ${{ inputs.linux }}
       linux:
