@@ -193,7 +193,7 @@ jobs:
           files: |
             ${{ env.ASSET_REL }}
             ${{ env.ZIP_RELEASE_ARCHIVE }}
-            _tag_name_.txt
+            ${{ env.WORK_DIR }}/_tag_name_.txt
 
       - name: Publish Release
         continue-on-error: true
@@ -204,7 +204,7 @@ jobs:
           files: |
             ${{ env.ASSET_REL }}
             ${{ env.ZIP_RELEASE_ARCHIVE }}
-            _tag_name_.txt
+            ${{ env.WORK_DIR }}/_tag_name_.txt
 
 # zip release end
 
