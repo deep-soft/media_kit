@@ -158,11 +158,13 @@ jobs:
           cache: true
 
       - name: flutter pub get
-      - run: |
+        shell: bash
+        run: |
           flutter pub get
 
       - name: flutter build windows
-      - run: |
+        shell: bash
+        run: |
           flutter build windows --verbose
 
 ###
