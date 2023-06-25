@@ -1,4 +1,4 @@
-# 2023-06-25 20:00
+# 2023-06-25 20:30
 
 name: act - build
 
@@ -307,96 +307,6 @@ jobs:
             ${{ env.WORK_DIR }}/_tag_name_.txt
 # zip release end
 
-
-  linux:
-    name: Linux
-    if: ${{ inputs.linux }}
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: media_kit_test
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: "true"
-      - run: sudo apt-get update
-      - run: sudo apt-get install clang cmake ninja-build pkg-config libgtk-3-dev mpv libmpv-dev dpkg-dev p7zip-full p7zip-rar
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: "stable"
-      - run: flutter pub get
-      - run: flutter build linux --verbose
-      - run: 7z a media_kit_test_linux_x64.7z build/linux/x64/release/bundle
-      - uses: actions/upload-artifact@v1
-        with:
-          name: media_kit_test_linux_x64
-          path: media_kit_test/media_kit_test_linux_x64.7z
-      - uses: softprops/action-gh-release@v1
-        if: github.ref == 'refs/heads/main'
-        with:
-          draft: true
-          prerelease: false
-          tag_name: "vnext"
-          files: |
-            media_kit_test/media_kit_test_linux_x64.7z
-  macos:
-    name: macOS
-    if: ${{ inputs.macos }}
-    runs-on: macos-latest
-    defaults:
-      run:
-        working-directory: media_kit_test
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: "true"
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: "stable"
-      - run: flutter pub get
-      - run: flutter build macos --verbose
-      - run: 7z a media_kit_test_macos_universal.7z build/macos/Build/Products/Release/media_kit_test.app
-      - uses: actions/upload-artifact@v1
-        with:
-          name: media_kit_test_macos_universal
-          path: media_kit_test/media_kit_test_macos_universal.7z
-      - uses: softprops/action-gh-release@v1
-        if: github.ref == 'refs/heads/main'
-        with:
-          draft: true
-          prerelease: false
-          tag_name: "vnext"
-          files: |
-            media_kit_test/media_kit_test_macos_universal.7z
-  ios:
-    name: iOS
-    if: ${{ inputs.ios }}
-    runs-on: macos-latest
-    defaults:
-      run:
-        working-directory: media_kit_test
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: "true"
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: "stable"
-      - run: flutter pub get
-      - run: flutter build ios --verbose --no-codesign
-      - run: 7z a media_kit_test_ios_arm64.7z build/ios/iphoneos/Runner.app
-      - uses: actions/upload-artifact@v1
-        with:
-          name: media_kit_test_ios_arm64
-          path: media_kit_test/media_kit_test_ios_arm64.7z
-      - uses: softprops/action-gh-release@v1
-        if: github.ref == 'refs/heads/main'
-        with:
-          draft: true
-          prerelease: false
-          tag_name: "vnext"
-          files: |
-            media_kit_test/media_kit_test_ios_arm64.7z
   android:
     name: Android
     if: ${{ inputs.android }}
@@ -440,6 +350,59 @@ jobs:
             media_kit_test/build/app/outputs/flutter-apk/media_kit_test_android-arm64-v8a.apk
             media_kit_test/build/app/outputs/flutter-apk/media_kit_test_android-x86_64.apk
 
+  optional-libs-android:
+    name: Android (optional libs)
+    if: ${{ inputs.android }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: media_kit_test
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: "true"
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: "stable"
+      - name: Remove `media_kit_libs_*` dependencies
+        run: |
+          sed -i '/media_kit_libs_/d' pubspec.yaml
+          cat pubspec.yaml
+      - run: flutter pub get
+      - run: flutter build apk --split-per-abi --verbose
+
+  linux:
+    name: Linux
+    if: ${{ inputs.linux }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: media_kit_test
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: "true"
+      - run: sudo apt-get update
+      - run: sudo apt-get install clang cmake ninja-build pkg-config libgtk-3-dev mpv libmpv-dev dpkg-dev p7zip-full p7zip-rar
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: "stable"
+      - run: flutter pub get
+      - run: flutter build linux --verbose
+      - run: 7z a media_kit_test_linux_x64.7z build/linux/x64/release/bundle
+      - uses: actions/upload-artifact@v1
+        with:
+          name: media_kit_test_linux_x64
+          path: media_kit_test/media_kit_test_linux_x64.7z
+      - uses: softprops/action-gh-release@v1
+        if: github.ref == 'refs/heads/main'
+        with:
+          draft: true
+          prerelease: false
+          tag_name: "vnext"
+          files: |
+            media_kit_test/media_kit_test_linux_x64.7z
+
   optional-libs-linux:
     name: Linux (optional libs)
     if: ${{ inputs.linux }}
@@ -463,6 +426,36 @@ jobs:
       - run: flutter pub get
       - run: flutter build linux --verbose
 
+  macos:
+    name: macOS
+    if: ${{ inputs.macos }}
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: media_kit_test
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: "true"
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: "stable"
+      - run: flutter pub get
+      - run: flutter build macos --verbose
+      - run: 7z a media_kit_test_macos_universal.7z build/macos/Build/Products/Release/media_kit_test.app
+      - uses: actions/upload-artifact@v1
+        with:
+          name: media_kit_test_macos_universal
+          path: media_kit_test/media_kit_test_macos_universal.7z
+      - uses: softprops/action-gh-release@v1
+        if: github.ref == 'refs/heads/main'
+        with:
+          draft: true
+          prerelease: false
+          tag_name: "vnext"
+          files: |
+            media_kit_test/media_kit_test_macos_universal.7z
+
   optional-libs-macos:
     name: macOS (optional libs)
     if: ${{ inputs.macos }}
@@ -484,6 +477,36 @@ jobs:
       - run: flutter pub get
       - run: flutter build macos --verbose
 
+  ios:
+    name: iOS
+    if: ${{ inputs.ios }}
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: media_kit_test
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: "true"
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: "stable"
+      - run: flutter pub get
+      - run: flutter build ios --verbose --no-codesign
+      - run: 7z a media_kit_test_ios_arm64.7z build/ios/iphoneos/Runner.app
+      - uses: actions/upload-artifact@v1
+        with:
+          name: media_kit_test_ios_arm64
+          path: media_kit_test/media_kit_test_ios_arm64.7z
+      - uses: softprops/action-gh-release@v1
+        if: github.ref == 'refs/heads/main'
+        with:
+          draft: true
+          prerelease: false
+          tag_name: "vnext"
+          files: |
+            media_kit_test/media_kit_test_ios_arm64.7z
+
   optional-libs-ios:
     name: iOS (optional libs)
     if: ${{ inputs.ios }}
@@ -504,24 +527,3 @@ jobs:
           cat pubspec.yaml
       - run: flutter pub get
       - run: flutter build ios --verbose --no-codesign
-
-  optional-libs-android:
-    name: Android (optional libs)
-    if: ${{ inputs.android }}
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: media_kit_test
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: "true"
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: "stable"
-      - name: Remove `media_kit_libs_*` dependencies
-        run: |
-          sed -i '/media_kit_libs_/d' pubspec.yaml
-          cat pubspec.yaml
-      - run: flutter pub get
-      - run: flutter build apk --split-per-abi --verbose
