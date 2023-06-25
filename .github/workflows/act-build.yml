@@ -1,4 +1,4 @@
-# 2023-06-25 18:00
+# 2023-06-25 19:00
 
 name: act - build
 
@@ -48,6 +48,14 @@ on:
         type: boolean
         required: true
         default: false
+
+env:
+  TAG_NAME: media-kit-test
+  VERSION: v1.0.0
+  TAG_VERSION: media-kit-test-v1.0.0
+  TAG_BUILD: "-b"
+  TAG_REF: "0000000"
+  FLUTTER_VERSION: "3.10.5"
 
 jobs:
   # TODO: Enable package:media_kit tests on Windows
@@ -112,28 +120,91 @@ jobs:
     defaults:
       run:
         working-directory: media_kit_test
+
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout source code
+        uses: deep-soft/checkout@v3
         with:
           submodules: "true"
-      - uses: subosito/flutter-action@v1
+
+# - get ref set build begin
+      - name: Get ref, set build version
+        shell: bash
+        run: |
+          _ref_all_=$(git log -1 --format='%H')
+          # _ref_=$(echo ${_ref_all_::7})
+          _date_=$(date +%Y%m%dT%H%M%S)
+          _ref_org_=${{ env.TAG_REF }}
+          _ref_len_="${#_ref_org_}"
+          _ref_=$(echo ${_ref_all_::$_ref_len_})
+          echo "TAG_REF=$_ref_" >> $GITHUB_ENV
+          _build_=${{ env.TAG_BUILD }}-$_date_-$_ref_
+          echo "TAG_BUILD=$_build_" >> $GITHUB_ENV
+          echo "WORK_DIR=$(pwd)" >> $GITHUB_ENV
+          echo "TAG_DATE=$_date_" >> $GITHUB_ENV
+
+      - name: Print ref, build version
+        shell: bash
+        run: |
+          echo "REF: ${{ env.TAG_REF }}
+          echo "BLD: ${{ env.TAG_BUILD }}
+          echo "${{ env.TAG_NAME }}-${{ env.TAG_BUILD }}" > _tag_name_.txt
+
+      - name: Install flutter
+        uses: deep-soft/flutter-action@v2
         with:
           channel: "stable"
-      - run: flutter pub get
-      - run: flutter build windows --verbose
-      - run: cmake -E tar "cfv" "media_kit_test_win32_x64.7z" --format=7zip "build\windows\runner\Release"
-      - uses: actions/upload-artifact@v1
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: flutter pub get
+      - run: |
+          flutter pub get
+
+      - name: flutter build windows
+      - run: |
+          flutter build windows --verbose
+
+###
+# zip release begin
+      - name: Create Archive Release
+        uses: deep-soft/zip-release@v2
         with:
-          name: media_kit_test_win32_x64
-          path: media_kit_test/media_kit_test_win32_x64.7z
-      - uses: softprops/action-gh-release@v1
-        if: github.ref == 'refs/heads/main'
+          type: 'zip'
+          filename: '${{ env.TAG_NAME }}-${{ env.VERSION }}.zip'
+          directory: 'build/windows/runner/Release'
+          path: '.'
+          exclusions: '*.git* /*node_modules/* .editorconfig'
+          # archive name is ${{ env.ZIP_RELEASE_ARCHIVE }}
+
+      - name: print env value
+        shell: bash
+        run: |
+          echo "env.ZIP_RELEASE_ARCHIVE=${{ env.ZIP_RELEASE_ARCHIVE }}"
+
+      - name: Publish Release
+        continue-on-error: true
+        uses: deep-soft/action-gh-release@v1
         with:
           draft: true
-          prerelease: false
-          tag_name: "vnext"
+          tag_name: ${{ env.TAG_NAME }}-${{ github.job }}
           files: |
-            media_kit_test/media_kit_test_win32_x64.7z
+            ${{ env.ASSET_REL }}
+            ${{ env.ZIP_RELEASE_ARCHIVE }}
+            _tag_name_.txt
+
+      - name: Publish Release
+        continue-on-error: true
+        uses: deep-soft/action-gh-release@v1
+        with:
+          draft: true
+          tag_name: ${{ env.TAG_VERSION }}${{ env.TAG_BUILD }}
+          files: |
+            ${{ env.ASSET_REL }}
+            ${{ env.ZIP_RELEASE_ARCHIVE }}
+            _tag_name_.txt
+
+# zip release end
 
   linux:
     name: Linux
@@ -166,7 +237,6 @@ jobs:
           tag_name: "vnext"
           files: |
             media_kit_test/media_kit_test_linux_x64.7z
-
   macos:
     name: macOS
     if: ${{ inputs.macos }}
@@ -196,7 +266,6 @@ jobs:
           tag_name: "vnext"
           files: |
             media_kit_test/media_kit_test_macos_universal.7z
-
   ios:
     name: iOS
     if: ${{ inputs.ios }}
@@ -226,7 +295,6 @@ jobs:
           tag_name: "vnext"
           files: |
             media_kit_test/media_kit_test_ios_arm64.7z
-
   android:
     name: Android
     if: ${{ inputs.android }}
@@ -269,7 +337,6 @@ jobs:
             media_kit_test/build/app/outputs/flutter-apk/media_kit_test_android-armeabi-v7a.apk
             media_kit_test/build/app/outputs/flutter-apk/media_kit_test_android-arm64-v8a.apk
             media_kit_test/build/app/outputs/flutter-apk/media_kit_test_android-x86_64.apk
-
   optional-libs-windows:
     name: Windows (optional libs)
     if: ${{ inputs.windows }}
