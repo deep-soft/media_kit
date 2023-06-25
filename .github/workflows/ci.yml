@@ -1,5 +1,7 @@
 name: Github Actions
-on: [push, pull_request]
+# on: [push, pull_request]
+on:
+  workflow_dispatch:
 
 jobs:
   # TODO: Enable package:media_kit tests on Windows
