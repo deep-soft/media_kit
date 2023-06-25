@@ -174,7 +174,7 @@ jobs:
         with:
           type: 'zip'
           filename: '${{ env.TAG_NAME }}-${{ env.VERSION }}.zip'
-          directory: 'build/windows/runner/Release'
+          directory: 'media_kit_test/build/windows/runner/Release'
           path: '.'
           exclusions: '*.git* /*node_modules/* .editorconfig'
           # archive name is ${{ env.ZIP_RELEASE_ARCHIVE }}
