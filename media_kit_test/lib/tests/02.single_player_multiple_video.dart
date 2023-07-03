@@ -19,16 +19,17 @@ class SinglePlayerMultipleVideoScreen extends StatefulWidget {
 class _SinglePlayerMultipleVideoScreenState
     extends State<SinglePlayerMultipleVideoScreen> {
   late final Player player = Player();
-  // NOTE: A single [VideoController] is enough for multiple [Video] widgets (& more efficient).
-  //       Here, two [VideoController]s are created for testing.
-  late final VideoController controller0 = VideoController(
+  late final VideoController controller = VideoController(
     player,
     configuration: configuration.value,
   );
-  late final VideoController controller1 = VideoController(
-    player,
-    configuration: configuration.value,
-  );
+
+  @override
+  void initState() {
+    super.initState();
+    player.open(Media(sources[0]));
+    player.stream.error.listen((error) => debugPrint(error));
+  }
 
   @override
   void dispose() {
@@ -111,11 +112,11 @@ class _SinglePlayerMultipleVideoScreenState
                                   child: Row(
                                     children: [
                                       Expanded(
-                                          child:
-                                              Video(controller: controller0)),
+                                        child: Video(controller: controller),
+                                      ),
                                       Expanded(
-                                          child:
-                                              Video(controller: controller0)),
+                                        child: Video(controller: controller),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -123,11 +124,11 @@ class _SinglePlayerMultipleVideoScreenState
                                   child: Row(
                                     children: [
                                       Expanded(
-                                          child:
-                                              Video(controller: controller1)),
+                                        child: Video(controller: controller),
+                                      ),
                                       Expanded(
-                                          child:
-                                              Video(controller: controller1)),
+                                        child: Video(controller: controller),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -135,7 +136,6 @@ class _SinglePlayerMultipleVideoScreenState
                             ),
                           ),
                         ),
-                        SeekBar(player: player),
                         const SizedBox(height: 32.0),
                       ],
                     ),
@@ -161,25 +161,42 @@ class _SinglePlayerMultipleVideoScreenState
                         Expanded(
                           child: Row(
                             children: [
-                              Expanded(child: Video(controller: controller0)),
-                              Expanded(child: Video(controller: controller0)),
+                              Expanded(
+                                child: Video(
+                                  controller: controller,
+                                  controls: NoVideoControls,
+                                ),
+                              ),
+                              Expanded(
+                                child: Video(
+                                  controller: controller,
+                                  controls: NoVideoControls,
+                                ),
+                              ),
                             ],
                           ),
                         ),
                         Expanded(
                           child: Row(
                             children: [
-                              Expanded(child: Video(controller: controller1)),
-                              Expanded(child: Video(controller: controller1)),
+                              Expanded(
+                                child: Video(
+                                  controller: controller,
+                                  controls: NoVideoControls,
+                                ),
+                              ),
+                              Expanded(
+                                child: Video(
+                                  controller: controller,
+                                  controls: NoVideoControls,
+                                ),
+                              ),
                             ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                  SeekBar(player: player),
-                  const SizedBox(height: 32.0),
-                  const Divider(height: 1.0, thickness: 1.0),
                   ...items,
                 ],
               ),

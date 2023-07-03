@@ -1,3 +1,12 @@
+## 1.1.1
+
+- fix: add `@Keep` annotation to `MediaKitAndroidHelper`
+
+## 1.1.0
+
+- feat: support for AGP 8.0
+- build: bump dependencies
+
 ## 1.0.6
 
 - build: bump dependencies
