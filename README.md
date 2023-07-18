@@ -38,49 +38,6 @@ A complete video & audio playback library for Flutter & Dart. Performant, stable
   </a>
 </strong>
 
-## Installation
-
-[package:media_kit](https://github.com/alexmercerind/media_kit) is split into number of packages to improve modularity & reduce bundle size.
-
-#### For apps that need video playback:
-
-```yaml
-dependencies:
-  media_kit: ^1.0.2                              # Primary package.
-  
-  media_kit_video: ^1.0.2                        # For video rendering.
-  
-  media_kit_native_event_loop: ^1.0.6            # Support for higher number of concurrent instances & better performance.
-  
-  media_kit_libs_android_video: ^1.1.1           # Android package for video native libraries.
-  media_kit_libs_ios_video: ^1.0.4               # iOS package for video native libraries.
-  media_kit_libs_macos_video: ^1.0.5             # macOS package for video native libraries.
-  media_kit_libs_windows_video: ^1.0.2           # Windows package for video native libraries.
-  media_kit_libs_linux: ^1.0.2                   # GNU/Linux dependency package.
-```
-
-#### For apps that need audio playback:
-
-```yaml
-dependencies:
-  media_kit: ^1.0.2                              # Primary package.
-  
-  media_kit_native_event_loop: ^1.0.6            # Support for higher number of concurrent instances & better performance.
-  
-  media_kit_libs_android_audio: ^1.1.1           # Android package for audio native libraries.
-  media_kit_libs_ios_audio: ^1.0.4               # iOS package for audio native libraries.
-  media_kit_libs_macos_audio: ^1.0.5             # macOS package for audio native libraries.
-  media_kit_libs_windows_audio: ^1.0.3           # Windows package for audio native libraries.
-  media_kit_libs_linux: ^1.0.2                   # GNU/Linux dependency package.
-```
-
-**Notes:**
-
-- [Enable --split-per-abi](https://docs.flutter.dev/deployment/android#what-is-a-fat-apk) or [use app bundle (instead of APK)](https://docs.flutter.dev/deployment/android#when-should-i-build-app-bundles-versus-apks) on Android.
-- If app needs both video & audio playback, select video playback libraries.
-- Do not mix `media_kit_libs_*_video` & `media_kit_libs_*_audio` packages.
-- media_kit_libs_*** packages may be omitted depending upon the platform your app targets.
-
 ## Platforms
 
 | Platform | Video | Audio | Notes | Demo |
@@ -143,6 +100,50 @@ dependencies:
       <img src="https://github.com/alexmercerind/media_kit/assets/28951144/feb9fdf2-095f-43db-96af-f7782985238d" height="200" alt="Web"></img>
     </td>
 </table>
+
+## Installation
+
+[package:media_kit](https://github.com/alexmercerind/media_kit) is split into number of packages to improve modularity & reduce bundle size.
+
+#### For apps that need video playback:
+
+```yaml
+dependencies:
+  media_kit: ^1.0.2                              # Primary package.
+  
+  media_kit_video: ^1.0.2                        # For video rendering.
+  
+  media_kit_native_event_loop: ^1.0.6            # Support for higher number of concurrent instances & better performance.
+  
+  media_kit_libs_android_video: ^1.1.1           # Android package for video native libraries.
+  media_kit_libs_ios_video: ^1.0.4               # iOS package for video native libraries.
+  media_kit_libs_macos_video: ^1.0.5             # macOS package for video native libraries.
+  media_kit_libs_windows_video: ^1.0.2           # Windows package for video native libraries.
+  media_kit_libs_linux: ^1.0.2                   # GNU/Linux dependency package.
+```
+
+#### For apps that need audio playback:
+
+```yaml
+dependencies:
+  media_kit: ^1.0.2                              # Primary package.
+  
+  media_kit_native_event_loop: ^1.0.6            # Support for higher number of concurrent instances & better performance.
+  
+  media_kit_libs_android_audio: ^1.1.1           # Android package for audio native libraries.
+  media_kit_libs_ios_audio: ^1.0.4               # iOS package for audio native libraries.
+  media_kit_libs_macos_audio: ^1.0.5             # macOS package for audio native libraries.
+  media_kit_libs_windows_audio: ^1.0.3           # Windows package for audio native libraries.
+  media_kit_libs_linux: ^1.0.2                   # GNU/Linux dependency package.
+```
+
+**Notes:**
+
+- [Enable --split-per-abi](https://docs.flutter.dev/deployment/android#what-is-a-fat-apk) or [use app bundle (instead of APK)](https://docs.flutter.dev/deployment/android#when-should-i-build-app-bundles-versus-apks) on Android.
+- The video libraries should be selected if both video & audio support is needed.
+- The performance in ["Release" mode](https://docs.flutter.dev/testing/build-modes#debug) is substantially higher than in ["Debug" mode](https://docs.flutter.dev/testing/build-modes#debug).
+- The media\_kit\_libs\_\*\*\*\_video & media\_kit\_libs\_\*\*\*\_audio packages should not be mixed.
+- The media\_kit\_libs\_\*\*\* packages may be omitted depending upon the platforms your project targets.
 
 ## TL;DR
 
@@ -231,6 +232,10 @@ A usage guide for [package:media_kit](https://github.com/alexmercerind/media_kit
 - [Select video, audio or subtitle track](#select-video-audio-or-subtitle-track)
 - [Select audio device](#select-audio-device)
 - [Display the video](#display-the-video)
+- [Capture screenshot](#capture-screenshot)
+- [Customize subtitles](#customize-subtitles)
+- [Load external subtitle track](#load-external-subtitle-track)
+- [Load external audio track](#load-external-audio-track)
 - [Video controls](#video-controls)
 - [Next steps](#next-steps)
 
@@ -463,6 +468,7 @@ The following state(s) are available as events:
 | `Stream<Duration>`          | `buffer`       | Current buffer position. This indicates how much of the stream has been decoded & cached by the demuxer. |
 | `Stream<PlaylistMode>`      | `playlistMode` | Current playlist mode.                                                                                   |
 | `Stream<AudioParams>`       | `audioParams`  | Audio parameters of the currently playing media source e.g. sample rate, channels, etc.                  |
+| `Stream<VideoParams>`       | `videoParams`  | Video parameters of the currently playing media source e.g. width, height, rotation etc.                 |
 | `Stream<double?>`           | `audioBitrate` | Audio bitrate of the currently playing media source.                                                     |
 | `Stream<AudioDevice>`       | `audioDevice`  | Currently selected audio device.                                                                         |
 | `Stream<List<AudioDevice>>` | `audioDevices` | Currently available audio devices.                                                                       |
@@ -470,6 +476,7 @@ The following state(s) are available as events:
 | `Stream<Tracks>`            | `tracks`       | Currently available video, audio and subtitle tracks.                                                    |
 | `Stream<int>`               | `width`        | Currently playing video's width.                                                                         |
 | `Stream<int>`               | `height`       | Currently playing video's height.                                                                        |
+| `Stream<int>`               | `subtitle`     | Currently displayed subtitle.                                                                            |
 | `Stream<PlayerLog>`         | `log`          | Internal logs.                                                                                           |
 | `Stream<String>`            | `error`        | Error messages. This may be used to handle & display errors to the user.                                 |
 
@@ -732,6 +739,74 @@ final VideoController player = VideoController(
 );
 ```
 
+### Capture screenshot
+
+The `screenshot` method takes the snapshot of the current video frame & returns encoded image bytes as `Uint8List`.
+
+```dart
+final Uint8List? screenshot = await player.screenshot();
+```
+
+Additionally `format` argument may be specified to change the encoding format. Following formats are supported:
+- `image/jpeg` (default)
+- `image/png`
+
+### Customize subtitles
+
+`SubtitleViewConfiguration` can be passed to the `Video` widget for customizing the subtitles. The code is easier to understand:
+
+Notably, `TextStyle`, `TextAlign` & `EdgeInsetsGeometry` can be provided.
+
+```dart
+Video(
+  controller: controller,
+  subtitleViewConfiguration: const SubtitleViewConfiguration(
+    style: TextStyle(
+      height: 1.4,
+      fontSize: 24.0,
+      letterSpacing: 0.0,
+      wordSpacing: 0.0,
+      color: Color(0xffffffff),
+      fontWeight: FontWeight.normal,
+      backgroundColor: Color(0xaa000000),
+    ),
+    textAlign: TextAlign.center,
+    padding: EdgeInsets.all(24.0),
+  ),
+);
+```
+
+https://user-images.githubusercontent.com/28951144/253067794-73b5ca5d-e90d-4892-bc09-2a80f05c9f0b.mp4
+
+
+### Load external subtitle track
+
+The `SubtitleTrack.external` constructor can be used to load external subtitle track with URI e.g. SRT, WebVTT etc. The code is easier to understand:
+
+```dart
+await player.setSubtitleTrack(
+  SubtitleTrack.external(
+    'https://www.iandevlin.com/html5test/webvtt/upc-video-subtitles-en.vtt',
+    title: 'English',
+    language: 'en',
+  ),
+);
+```
+
+### Load external audio track
+
+The `AudioTrack.external` constructor can be used to load external audio track with URI. The code is easier to understand:
+
+```dart
+await player.setAudioTrack(
+  AudioTrack.external(
+    'https://www.iandevlin.com/html5test/webvtt/v/upc-tobymanley.mp4',
+    title: 'English',
+    language: 'en',
+  ),
+);
+```
+
 ### Video controls
 
 [`package:media_kit`](https://github.com/alexmercerind/media_kit) provides highly-customizable pre-built video controls for usage.
@@ -793,7 +868,6 @@ Scaffold(
   ),
 );
 ```
-
 
 #### Build custom video controls
 
@@ -981,7 +1055,7 @@ CupertinoVideoControlsTheme(
 This guide follows a tutorial-like structure & covers nearly all features that [package:media_kit](https://github.com/alexmercerind/media_kit) offers. However, it is _not complete_ by any means. You are free to improve this page & add more documentation, which newcomers may find helpful. The following places can help you learn more:
 
 - [API reference](https://pub.dev/documentation/media_kit/latest/media_kit/media_kit-library.html) can be helpful for diving into deeper specifics.
-- [source-code of the demo application](https://github.com/alexmercerind2/media_kit-private/tree/main/media_kit_test/lib/tests) offers some complete code samples.
+- [source-code of the demo application](https://github.com/alexmercerind/media_kit/tree/main/media_kit_test/lib/tests) offers some complete code samples.
 - In-code comments & docstrings happen to be the most updated source of knowledge.
 
 ## Goals
