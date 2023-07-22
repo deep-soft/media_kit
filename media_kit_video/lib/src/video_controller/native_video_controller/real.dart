@@ -20,6 +20,8 @@ import 'package:media_kit/generated/libmpv/bindings.dart';
 import 'package:media_kit_video/src/video_controller/video_controller.dart';
 import 'package:media_kit_video/src/video_controller/platform_video_controller.dart';
 
+import 'package:media_kit_video/src/video_controller/utils/query_decoders.dart';
+
 /// {@template native_video_controller}
 ///
 /// NativeVideoController
@@ -71,12 +73,26 @@ class NativeVideoController extends PlatformVideoController {
       configuration,
     );
 
+    // In case no video-decoders are found, this means media_kit_libs_***_audio is being used.
+    // Thus, --vid=no is required to prevent libmpv from trying to decode video (otherwise bad things may happen).
+    //
+    // Search for common H264 decoder to check if video support is available.
+    final decoders = await queryDecoders(handle);
+    if (!decoders.contains('h264')) {
+      throw UnsupportedError(
+        '[VideoController] is not available.'
+        ' '
+        'Please use media_kit_libs_***_video instead of media_kit_libs_***_audio.',
+      );
+    }
+
     // ----------------------------------------------
     NativeLibrary.ensureInitialized();
     final mpv = MPV(DynamicLibrary.open(NativeLibrary.path));
     final values = {
       'vo': configuration.vo ?? 'libmpv',
       'hwdec': configuration.hwdec ?? 'auto',
+      'vid': 'auto',
     };
     for (final entry in values.entries) {
       final property = entry.key.toNativeUtf8();

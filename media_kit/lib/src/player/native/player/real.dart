@@ -60,9 +60,12 @@ class NativePlayer extends PlatformPlayer {
   /// {@macro native_player}
   NativePlayer({required super.configuration})
       : mpv = generated.MPV(DynamicLibrary.open(NativeLibrary.path)) {
-    _create().then((_) {
-      configuration.ready?.call();
-    });
+    future = _create()
+      ..then((_) {
+        try {
+          configuration.ready?.call();
+        } catch (_) {}
+      });
   }
 
   /// Disposes the [Player] instance & releases the resources.
@@ -1340,6 +1343,7 @@ class NativePlayer extends PlatformPlayer {
       final prop = event.ref.data.cast<generated.mpv_event_property>();
       if (prop.ref.name.cast<Utf8>().toDartString() == 'idle-active' &&
           prop.ref.format == generated.mpv_format.MPV_FORMAT_FLAG) {
+        await future;
         // The [Player] has entered the idle state; initialization is complete.
         if (!completer.isCompleted) {
           completer.complete();
@@ -1999,7 +2003,11 @@ class NativePlayer extends PlatformPlayer {
   Future<void> _create() {
     return lock.synchronized(() async {
       // The options which must be set before [MPV.mpv_initialize].
-      final options = <String, String>{};
+      final options = <String, String>{
+        // Set --vid=no by default to prevent redundant video decoding.
+        // [VideoController] internally sets --vid=auto upon attachment to enable video rendering & decoding.
+        if (!test) 'vid': 'no',
+      };
 
       if (Platform.isAndroid &&
           configuration.libass &&
@@ -2197,6 +2205,10 @@ class NativePlayer extends PlatformPlayer {
   /// [Pointer] to [generated.mpv_handle] of this instance.
   Pointer<generated.mpv_handle> ctx = nullptr;
 
+  /// The [Future] to wait for [_create] completion.
+  /// This is used to prevent signaling [completer] (from [PlatformPlayer]) before [_create] completes in any hypothetical situation (because `idle-active` may fire before it).
+  Future<void>? future;
+
   /// Whether the [Player] has been disposed. This is used to prevent accessing dangling [ctx] after [dispose].
   bool disposed = false;
 
@@ -2226,12 +2238,6 @@ class NativePlayer extends PlatformPlayer {
   /// In summary, after loading a [Media] uri into libmpv, `playlist` is used to observe any changes & notify event [Stream].
   /// When receiving `playlist`, the URIs are looked up internally to fetch [Media.extras] & [Media.httpHeaders] etc.
   final HashSet<Media> current = HashSet<Media>();
-
-  /// [Completer] to wait for initialization of this instance (in [_create]).
-  final Completer<void> completer = Completer<void>();
-
-  /// [Future<void>] to wait for initialization of this instance.
-  Future<void> get waitForPlayerInitialization => completer.future;
 
   /// Synchronization & mutual exclusion between methods of this class.
   static final LockExt lock = LockExt();
@@ -2293,73 +2299,75 @@ Uint8List? _screenshot(_ScreenshotData data) {
     result.cast(),
   );
 
-  assert(result.ref.format == generated.mpv_format.MPV_FORMAT_NODE_MAP);
-
-  int? w, h, stride;
-  Uint8List? bytes;
-
-  final map = result.ref.u.list;
-  for (int i = 0; i < map.ref.num; i++) {
-    final key = map.ref.keys[i].cast<Utf8>().toDartString();
-    final value = map.ref.values[i];
-    switch (value.format) {
-      case generated.mpv_format.MPV_FORMAT_INT64:
-        switch (key) {
-          case 'w':
-            w = value.u.int64;
-            break;
-          case 'h':
-            h = value.u.int64;
-            break;
-          case 'stride':
-            stride = value.u.int64;
-            break;
-        }
-        break;
-      case generated.mpv_format.MPV_FORMAT_BYTE_ARRAY:
-        switch (key) {
-          case 'data':
-            final data = value.u.ba.ref.data.cast<Uint8>();
-            bytes = data.asTypedList(value.u.ba.ref.size);
-            break;
-        }
-        break;
-    }
-  }
-
   Uint8List? image;
 
-  if (w != null && h != null && stride != null && bytes != null) {
-    final pixels = Image(
-      width: w,
-      height: h,
-      numChannels: 4,
-    );
-    for (final pixel in pixels) {
-      final x = pixel.x;
-      final y = pixel.y;
-      final i = (y * stride) + (x * 4);
-      pixel.b = bytes[i];
-      pixel.g = bytes[i + 1];
-      pixel.r = bytes[i + 2];
-      pixel.a = bytes[i + 3];
-    }
-    switch (format) {
-      case 'image/jpeg':
-        {
-          image = encodeJpg(pixels);
+  if (result.ref.format == generated.mpv_format.MPV_FORMAT_NODE_MAP) {
+    int? w, h, stride;
+    Uint8List? bytes;
+
+    final map = result.ref.u.list;
+    for (int i = 0; i < map.ref.num; i++) {
+      final key = map.ref.keys[i].cast<Utf8>().toDartString();
+      final value = map.ref.values[i];
+      switch (value.format) {
+        case generated.mpv_format.MPV_FORMAT_INT64:
+          switch (key) {
+            case 'w':
+              w = value.u.int64;
+              break;
+            case 'h':
+              h = value.u.int64;
+              break;
+            case 'stride':
+              stride = value.u.int64;
+              break;
+          }
           break;
-        }
-      case 'image/png':
-        {
-          image = encodePng(pixels);
-        }
+        case generated.mpv_format.MPV_FORMAT_BYTE_ARRAY:
+          switch (key) {
+            case 'data':
+              final data = value.u.ba.ref.data.cast<Uint8>();
+              bytes = data.asTypedList(value.u.ba.ref.size);
+              break;
+          }
+          break;
+      }
+    }
+
+    if (w != null && h != null && stride != null && bytes != null) {
+      final pixels = Image(
+        width: w,
+        height: h,
+        numChannels: 4,
+      );
+      for (final pixel in pixels) {
+        final x = pixel.x;
+        final y = pixel.y;
+        final i = (y * stride) + (x * 4);
+        pixel.b = bytes[i];
+        pixel.g = bytes[i + 1];
+        pixel.r = bytes[i + 2];
+        pixel.a = bytes[i + 3];
+      }
+      switch (format) {
+        case 'image/jpeg':
+          {
+            image = encodeJpg(pixels);
+            break;
+          }
+        case 'image/png':
+          {
+            image = encodePng(pixels);
+          }
+      }
     }
   }
 
-  calloc.free(arr);
   pointers.forEach(calloc.free);
   mpv.mpv_free_node_contents(result.cast());
+
+  calloc.free(arr);
+  calloc.free(result.cast());
 
   return image;
 }

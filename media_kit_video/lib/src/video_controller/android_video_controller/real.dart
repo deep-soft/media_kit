@@ -26,6 +26,8 @@ import 'package:media_kit/generated/libmpv/bindings.dart';
 import 'package:media_kit_video/src/video_controller/video_controller.dart';
 import 'package:media_kit_video/src/video_controller/platform_video_controller.dart';
 
+import 'package:media_kit_video/src/video_controller/utils/query_decoders.dart';
+
 /// {@template android_video_controller}
 ///
 /// AndroidVideoController
@@ -65,11 +67,14 @@ class AndroidVideoController extends PlatformVideoController {
         if (event != null && event > 0) {
           w = event;
           if (w != -1 && h != -1) {
-            _controller.add(Rect.fromLTWH(0, 0, w.toDouble(), h.toDouble()));
-            // Notify about the first frame being rendered.
-            if (!waitUntilFirstFrameRenderedCompleter.isCompleted) {
-              waitUntilFirstFrameRenderedCompleter.complete();
-            }
+            _controller.add(
+              Rect.fromLTWH(
+                0.0,
+                0.0,
+                w.toDouble(),
+                h.toDouble(),
+              ),
+            );
             w = -1;
             h = -1;
           }
@@ -81,11 +86,14 @@ class AndroidVideoController extends PlatformVideoController {
         if (event != null && event > 0) {
           h = event;
           if (w != -1 && h != -1) {
-            _controller.add(Rect.fromLTWH(0, 0, w.toDouble(), h.toDouble()));
-            // Notify about the first frame being rendered.
-            if (!waitUntilFirstFrameRenderedCompleter.isCompleted) {
-              waitUntilFirstFrameRenderedCompleter.complete();
-            }
+            _controller.add(
+              Rect.fromLTWH(
+                0.0,
+                0.0,
+                w.toDouble(),
+                h.toDouble(),
+              ),
+            );
             w = -1;
             h = -1;
           }
@@ -133,7 +141,12 @@ class AndroidVideoController extends PlatformVideoController {
           calloc.free(property);
           mpv.mpv_free(vo.cast());
 
-          await player.seek(player.state.position);
+          // Notify about the first frame being rendered.
+          if (!waitUntilFirstFrameRenderedCompleter.isCompleted) {
+            // The first-time resize of the surface causes a glitchy frame to be rendered. Add a voluntary delay to avoid that.
+            await Future.delayed(const Duration(milliseconds: 50));
+            waitUntilFirstFrameRenderedCompleter.complete();
+          }
 
           // ----------------------------------------------
         } catch (exception, stacktrace) {
@@ -188,16 +201,29 @@ class AndroidVideoController extends PlatformVideoController {
     final int wid = data['wid'];
     debugPrint(data.toString());
 
+    // In case no video-decoders are found, this means media_kit_libs_***_audio is being used.
+    // Thus, --vid=no is required to prevent libmpv from trying to decode video (otherwise bad things may happen).
+    //
+    // Search for common H264 decoder to check if video support is available.
+    final decoders = await queryDecoders(handle);
+    if (!decoders.contains('h264')) {
+      throw UnsupportedError(
+        '[VideoController] is not available.'
+        ' '
+        'Please use media_kit_libs_***_video instead of media_kit_libs_***_audio.',
+      );
+    }
+
     // ----------------------------------------------
     NativeLibrary.ensureInitialized();
     final mpv = MPV(DynamicLibrary.open(NativeLibrary.path));
-
     final values = configuration.vo == null || configuration.hwdec == null
         ? enableHardwareAcceleration
             ? {
-                // H/W decoding & rendering with --vo=gpu + --hwdec=mediacodec-copy.
+                // H/W decoding & rendering with --vo=gpu + --hwdec=mediacodec.
                 'vo': 'gpu',
                 'hwdec': 'mediacodec',
+                'vid': 'auto',
                 'opengl-es': 'yes',
                 'force-window': 'yes',
                 'gpu-context': 'android',
@@ -207,6 +233,7 @@ class AndroidVideoController extends PlatformVideoController {
                 // S/W decoding & rendering with --vo=gpu + --hwdec=no.
                 'vo': 'gpu',
                 'hwdec': 'no',
+                'vid': 'auto',
                 'opengl-es': 'yes',
                 'force-window': 'yes',
                 'gpu-context': 'android',
@@ -215,6 +242,7 @@ class AndroidVideoController extends PlatformVideoController {
         : {
             'vo': configuration.vo!,
             'hwdec': configuration.hwdec!,
+            'vid': 'auto',
             'opengl-es': 'yes',
             'force-window': 'yes',
             'gpu-context': 'android',
