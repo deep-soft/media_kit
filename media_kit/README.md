@@ -38,9 +38,9 @@ A complete video & audio playback library for Flutter & Dart. Performant, stable
 
 ```yaml
 dependencies:
-  media_kit: ^1.0.2                              # Primary package.
+  media_kit: ^1.1.0                              # Primary package.
   
-  media_kit_video: ^1.0.2                        # For video rendering.
+  media_kit_video: ^1.1.0                        # For video rendering.
   
   media_kit_native_event_loop: ^1.0.6            # Support for higher number of concurrent instances & better performance.
   
@@ -55,7 +55,7 @@ dependencies:
 
 ```yaml
 dependencies:
-  media_kit: ^1.0.2                              # Primary package.
+  media_kit: ^1.1.0                              # Primary package.
   
   media_kit_native_event_loop: ^1.0.6            # Support for higher number of concurrent instances & better performance.
   
@@ -78,12 +78,13 @@ dependencies:
 
 | Platform | Video | Audio | Notes | Demo |
 | -------- | ----- | ----- | ----- | ---- |
-| Android     | ✅    | ✅    | Android 5.0 or above.                | [Download](https://github.com/alexmercerind/media_kit/releases/download/media_kit-v1.0.1/media_kit_test_android-arm64-v8a.apk) |
-| iOS         | ✅    | ✅    | iOS 9 or above.                      | [Download](https://github.com/alexmercerind/media_kit/releases/download/media_kit-v1.0.1/media_kit_test_ios_arm64.7z)          |
-| macOS       | ✅    | ✅    | macOS 10.9 or above.                 | [Download](https://github.com/alexmercerind/media_kit/releases/download/media_kit-v1.0.1/media_kit_test_macos_universal.7z)    |
-| Windows     | ✅    | ✅    | Windows 7 or above.                  | [Download](https://github.com/alexmercerind/media_kit/releases/download/media_kit-v1.0.1/media_kit_test_win32_x64.7z)          |
-| GNU/Linux   | ✅    | ✅    | Any modern GNU/Linux distribution.   | [Download](https://github.com/alexmercerind/media_kit/releases/download/media_kit-v1.0.1/media_kit_test_linux_x64.7z)          |
-| Web         | ✅    | ✅    | Any modern web browser.              | [Visit](https://alexmercerind.github.io//media_kit/)                                                                            |
+| Android     | ✅    | ✅    | Android 5.0 or above.                | [Download](https://github.com/alexmercerind/media_kit/releases/download/media_kit-v1.1.0/media_kit_test_android-arm64-v8a.apk) |
+| iOS         | ✅    | ✅    | iOS 9 or above.                      | [Download](https://github.com/alexmercerind/media_kit/releases/download/media_kit-v1.1.0/media_kit_test_ios_arm64.7z)          |
+| macOS       | ✅    | ✅    | macOS 10.9 or above.                 | [Download](https://github.com/alexmercerind/media_kit/releases/download/media_kit-v1.1.0/media_kit_test_macos_universal.7z)    |
+| Windows     | ✅    | ✅    | Windows 7 or above.                  | [Download](https://github.com/alexmercerind/media_kit/releases/download/media_kit-v1.1.0/media_kit_test_win32_x64.7z)          |
+| GNU/Linux   | ✅    | ✅    | Any modern GNU/Linux distribution.   | [Download](https://github.com/alexmercerind/media_kit/releases/download/media_kit-v1.1.0/media_kit_test_linux_x64.7z)          |
+| Web         | ✅    | ✅    | Any modern web browser.              | [Visit](https://alexmercerind.github.io/media_kit/)                                                                            |
+
 
 <table>
   <tr>
@@ -136,6 +137,20 @@ dependencies:
       <img src="https://github.com/alexmercerind/media_kit/assets/28951144/feb9fdf2-095f-43db-96af-f7782985238d" height="200" alt="Web"></img>
     </td>
 </table>
+
+- ✅ Video playback
+- ✅ Audio playback
+- ✅ Cross platform
+- ✅ Wide format/codec support
+- ✅ Hardware/GPU acceleration
+- ✅ Playlist support with next/previous/jump/shuffle
+- ✅ Volume/Rate/Pitch change
+- ✅ Video/Audio/Subtitle track selection
+- ✅ External audio/subtitle track selection
+- ✅ HTTP headers
+- ✅ Video controls
+- ✅ Subtitle styling
+- ✅ Screenshot
 
 ## TL;DR
 
@@ -772,12 +787,57 @@ https://user-images.githubusercontent.com/28951144/253067794-73b5ca5d-e90d-4892-
 
 ### Load external subtitle track
 
-The `SubtitleTrack.external` constructor can be used to load external subtitle track with URI e.g. SRT, WebVTT etc. The code is easier to understand:
+The `SubtitleTrack.uri` constructor can be used to load external subtitle track **with URI** e.g. SRT, WebVTT etc. The code is easier to understand:
 
 ```dart
 await player.setSubtitleTrack(
-  SubtitleTrack.external(
+  SubtitleTrack.uri(
     'https://www.iandevlin.com/html5test/webvtt/upc-video-subtitles-en.vtt',
+    title: 'English',
+    language: 'en',
+  ),
+);
+```
+
+The `SubtitleTrack.data` constructor can be used to load external subtitle track **with data** e.g. SRT, WebVTT etc. The code is easier to understand:
+
+```dart
+player.setSubtitleTrack(
+  SubtitleTrack.data(
+    '''WEBVTT FILE
+
+1
+00:00:03.500 --> 00:00:05.000 D:vertical A:start
+Everyone wants the most from life
+
+2
+00:00:06.000 --> 00:00:09.000 A:start
+Like internet experiences that are rich <b>and</b> entertaining
+
+3
+00:00:11.000 --> 00:00:14.000 A:end
+Phone conversations where people truly <c.highlight>connect</c>
+
+4
+00:00:14.500 --> 00:00:18.000
+Your favourite TV programmes ready to watch at the touch of a button
+
+5
+00:00:19.000 --> 00:00:24.000
+Which is why we are bringing TV, internet and phone together in <c.highlight>one</c> super package
+
+6
+00:00:24.500 --> 00:00:26.000
+<c.highlight>One</c> simple way to get everything
+
+7
+00:00:26.500 --> 00:00:27.500 L:12%
+UPC
+
+8
+00:00:28.000 --> 00:00:30.000 L:75%
+Simply for <u>everyone</u>
+''',
     title: 'English',
     language: 'en',
   ),
@@ -786,11 +846,11 @@ await player.setSubtitleTrack(
 
 ### Load external audio track
 
-The `AudioTrack.external` constructor can be used to load external audio track with URI. The code is easier to understand:
+The `AudioTrack.uri` constructor can be used to load external audio track **with URI**. The code is easier to understand:
 
 ```dart
 await player.setAudioTrack(
-  AudioTrack.external(
+  AudioTrack.uri(
     'https://www.iandevlin.com/html5test/webvtt/v/upc-tobymanley.mp4',
     title: 'English',
     language: 'en',

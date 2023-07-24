@@ -9,9 +9,10 @@ import 'dart:math';
 import 'dart:async';
 import 'dart:collection';
 import 'dart:typed_data';
-import 'package:meta/meta.dart';
 import 'package:path/path.dart';
+import 'package:meta/meta.dart';
 import 'package:image/image.dart';
+import 'package:safe_local_storage/safe_local_storage.dart';
 
 import 'package:media_kit/ffi/ffi.dart';
 
@@ -24,6 +25,7 @@ import 'package:media_kit/src/player/native/core/initializer_native_event_loop.d
 
 import 'package:media_kit/src/player/native/utils/isolates.dart';
 import 'package:media_kit/src/player/native/utils/lock_ext.dart';
+import 'package:media_kit/src/player/native/utils/temp_file.dart';
 import 'package:media_kit/src/player/native/utils/task_queue.dart';
 import 'package:media_kit/src/player/native/utils/android_helper.dart';
 import 'package:media_kit/src/player/native/utils/android_asset_loader.dart';
@@ -99,7 +101,7 @@ class NativePlayer extends PlatformPlayer {
                   TaskQueue.instance.refractoryDuration;
           if (safe) {
             mpv.mpv_terminate_destroy(ctx);
-            print('media_kit: mpv_terminate_destroy: ${ctx.address}');
+            print('media_kit: Player.dispose: ${ctx.address}');
           }
           return safe;
         },
@@ -1120,11 +1122,11 @@ class NativePlayer extends PlatformPlayer {
   ///
   /// * Currently selected [AudioTrack] can be accessed using [state.track.audio] or [stream.track.audio].
   /// * The list of currently available [AudioTrack]s can be obtained accessed using [state.tracks.audio] or [stream.tracks.audio].
-  /// * External audio tracks can be loaded using [AudioTrack.external] constructor.
+  /// * External audio track can be loaded using [AudioTrack.uri] constructor.
   ///
   /// ```dart
   /// player.setAudioTrack(
-  ///   AudioTrack.external(
+  ///   AudioTrack.uri(
   ///     'https://www.iandevlin.com/html5test/webvtt/v/upc-tobymanley.mp4',
   ///     title: 'English',
   ///     language: 'en',
@@ -1141,7 +1143,7 @@ class NativePlayer extends PlatformPlayer {
       await waitForPlayerInitialization;
       await waitForVideoControllerInitializationIfAttached;
 
-      if (track.external) {
+      if (track.uri) {
         await _command(
           [
             'audio-add',
@@ -1191,11 +1193,11 @@ class NativePlayer extends PlatformPlayer {
   ///
   /// * Currently selected [SubtitleTrack] can be accessed using [state.track.subtitle] or [stream.track.subtitle].
   /// * The list of currently available [SubtitleTrack]s can be obtained accessed using [state.tracks.subtitle] or [stream.tracks.subtitle].
-  /// * External subtitle tracks can be loaded using [SubtitleTrack.external] constructor.
+  /// * External subtitle track can be loaded using [SubtitleTrack.uri] or [SubtitleTrack.data] constructor.
   ///
   /// ```dart
   /// player.setSubtitleTrack(
-  ///   SubtitleTrack.external(
+  ///   SubtitleTrack.uri(
   ///     'https://www.iandevlin.com/html5test/webvtt/upc-video-subtitles-en.vtt',
   ///     title: 'English',
   ///     language: 'en',
@@ -1213,11 +1215,25 @@ class NativePlayer extends PlatformPlayer {
       await waitForPlayerInitialization;
       await waitForVideoControllerInitializationIfAttached;
 
-      if (track.external) {
+      if (track.uri || track.data) {
+        final String uri;
+        if (track.uri) {
+          uri = track.id;
+        } else if (track.data) {
+          // Save the subtitle data to a temporary [File].
+          final temp = await TempFile.create();
+          await temp.write_(track.id);
+          // Delete the temporary [File] upon [dispose].
+          release.add(temp.delete_);
+          uri = temp.uri.toString();
+        } else {
+          return;
+        }
+
         await _command(
           [
             'sub-add',
-            track.id,
+            uri,
             'select',
             track.title ?? 'external',
             track.language ?? 'auto',
@@ -1262,20 +1278,22 @@ class NativePlayer extends PlatformPlayer {
   /// Takes the snapshot of the current video frame & returns encoded image bytes as [Uint8List].
   ///
   /// The [format] parameter specifies the format of the image to be returned. Supported values are:
-  /// * `image/jpeg`
-  /// * `image/png`
+  /// * `image/jpeg`: Returns a JPEG encoded image.
+  /// * `image/png`: Returns a PNG encoded image.
+  /// * `null`: Returns BGRA pixel buffer.
   @override
   Future<Uint8List?> screenshot(
-      {String format = 'image/jpeg', bool synchronized = true}) async {
+      {String? format = 'image/jpeg', bool synchronized = true}) async {
     Future<Uint8List?> function() async {
       if (![
         'image/jpeg',
         'image/png',
+        null,
       ].contains(format)) {
         throw ArgumentError.value(
           format,
           'format',
-          'Supported values are: image/jpeg, image/png',
+          'Supported values are: image/jpeg, image/png, null',
         );
       }
       if (disposed) {
@@ -2261,7 +2279,7 @@ class NativePlayer extends PlatformPlayer {
 class _ScreenshotData {
   final int ctx;
   final String lib;
-  final String format;
+  final String? format;
 
   _ScreenshotData(
     this.ctx,
@@ -2335,29 +2353,49 @@ Uint8List? _screenshot(_ScreenshotData data) {
     }
 
     if (w != null && h != null && stride != null && bytes != null) {
-      final pixels = Image(
-        width: w,
-        height: h,
-        numChannels: 4,
-      );
-      for (final pixel in pixels) {
-        final x = pixel.x;
-        final y = pixel.y;
-        final i = (y * stride) + (x * 4);
-        pixel.b = bytes[i];
-        pixel.g = bytes[i + 1];
-        pixel.r = bytes[i + 2];
-        pixel.a = bytes[i + 3];
-      }
       switch (format) {
         case 'image/jpeg':
           {
+            final pixels = Image(
+              width: w,
+              height: h,
+              numChannels: 4,
+            );
+            for (final pixel in pixels) {
+              final x = pixel.x;
+              final y = pixel.y;
+              final i = (y * stride) + (x * 4);
+              pixel.b = bytes[i];
+              pixel.g = bytes[i + 1];
+              pixel.r = bytes[i + 2];
+              pixel.a = bytes[i + 3];
+            }
             image = encodeJpg(pixels);
             break;
           }
         case 'image/png':
           {
+            final pixels = Image(
+              width: w,
+              height: h,
+              numChannels: 4,
+            );
+            for (final pixel in pixels) {
+              final x = pixel.x;
+              final y = pixel.y;
+              final i = (y * stride) + (x * 4);
+              pixel.b = bytes[i];
+              pixel.g = bytes[i + 1];
+              pixel.r = bytes[i + 2];
+              pixel.a = bytes[i + 3];
+            }
             image = encodePng(pixels);
+            break;
+          }
+        case null:
+          {
+            image = bytes;
+            break;
           }
       }
     }

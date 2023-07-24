@@ -269,11 +269,11 @@ class Player {
   ///
   /// * Currently selected [AudioTrack] can be accessed using [state.track.audio] or [stream.track.audio].
   /// * The list of currently available [AudioTrack]s can be obtained accessed using [state.tracks.audio] or [stream.tracks.audio].
-  /// * External audio tracks can be loaded using [AudioTrack.external] constructor.
+  /// * External audio track can be loaded using [AudioTrack.uri] constructor.
   ///
   /// ```dart
   /// player.setAudioTrack(
-  ///   AudioTrack.external(
+  ///   AudioTrack.uri(
   ///     'https://www.iandevlin.com/html5test/webvtt/v/upc-tobymanley.mp4',
   ///     title: 'English',
   ///     language: 'en',
@@ -289,11 +289,11 @@ class Player {
   ///
   /// * Currently selected [SubtitleTrack] can be accessed using [state.track.subtitle] or [stream.track.subtitle].
   /// * The list of currently available [SubtitleTrack]s can be obtained accessed using [state.tracks.subtitle] or [stream.tracks.subtitle].
-  /// * External subtitle tracks can be loaded using [SubtitleTrack.external] constructor.
+  /// * External subtitle track can be loaded using [SubtitleTrack.uri] or [SubtitleTrack.data] constructor.
   ///
   /// ```dart
   /// player.setSubtitleTrack(
-  ///   SubtitleTrack.external(
+  ///   SubtitleTrack.uri(
   ///     'https://www.iandevlin.com/html5test/webvtt/upc-video-subtitles-en.vtt',
   ///     title: 'English',
   ///     language: 'en',
@@ -308,9 +308,10 @@ class Player {
   /// Takes the snapshot of the current video frame & returns encoded image bytes as [Uint8List].
   ///
   /// The [format] parameter specifies the format of the image to be returned. Supported values are:
-  /// * `image/jpeg`
-  /// * `image/png`
-  Future<Uint8List?> screenshot({String format = 'image/jpeg'}) async {
+  /// * `image/jpeg`: Returns a JPEG encoded image.
+  /// * `image/png`: Returns a PNG encoded image.
+  /// * `null`: Returns BGRA pixel buffer.
+  Future<Uint8List?> screenshot({String? format = 'image/jpeg'}) async {
     return platform?.screenshot(
       format: format,
     );
