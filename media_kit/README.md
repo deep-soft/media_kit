@@ -1,6 +1,6 @@
 # [package:media_kit](https://github.com/media-kit/media-kit)
 
-A complete video & audio playback library for Flutter & Dart.
+A cross-platform video player & audio player for Flutter & Dart.
 
 [![](https://img.shields.io/discord/1079685977523617792?color=33cd57&label=Discord&logo=discord&logoColor=discord)](https://discord.gg/h7qf2R9n57) [![Github Actions](https://github.com/media-kit/media-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/media-kit/media-kit/actions/workflows/ci.yml)
 
@@ -38,32 +38,32 @@ A complete video & audio playback library for Flutter & Dart.
 
 ```yaml
 dependencies:
-  media_kit: ^1.1.1                              # Primary package.
+  media_kit: ^1.1.3                              # Primary package.
   
-  media_kit_video: ^1.1.1                        # For video rendering.
+  media_kit_video: ^1.1.3                        # For video rendering.
   
-  media_kit_native_event_loop: ^1.0.6            # Support for higher number of concurrent instances & better performance.
+  media_kit_native_event_loop: ^1.0.7            # Support for higher number of concurrent instances & better performance.
   
-  media_kit_libs_android_video: ^1.3.0           # Android package for video native libraries.
-  media_kit_libs_ios_video: ^1.0.5               # iOS package for video native libraries.
-  media_kit_libs_macos_video: ^1.0.6             # macOS package for video native libraries.
-  media_kit_libs_windows_video: ^1.0.5           # Windows package for video native libraries.
-  media_kit_libs_linux: ^1.0.2                   # GNU/Linux dependency package.
+  media_kit_libs_android_video: ^1.3.1           # Android package for video native libraries.
+  media_kit_libs_ios_video: ^1.1.2               # iOS package for video native libraries.
+  media_kit_libs_macos_video: ^1.1.2             # macOS package for video native libraries.
+  media_kit_libs_windows_video: ^1.0.6           # Windows package for video native libraries.
+  media_kit_libs_linux: ^1.1.0                   # GNU/Linux dependency package.
 ```
 
 #### For apps that need audio playback:
 
 ```yaml
 dependencies:
-  media_kit: ^1.1.1                              # Primary package.
+  media_kit: ^1.1.3                              # Primary package.
   
-  media_kit_native_event_loop: ^1.0.6            # Support for higher number of concurrent instances & better performance.
+  media_kit_native_event_loop: ^1.0.7            # Support for higher number of concurrent instances & better performance.
   
-  media_kit_libs_android_audio: ^1.3.0           # Android package for audio native libraries.
-  media_kit_libs_ios_audio: ^1.0.5               # iOS package for audio native libraries.
-  media_kit_libs_macos_audio: ^1.0.6             # macOS package for audio native libraries.
-  media_kit_libs_windows_audio: ^1.0.5           # Windows package for audio native libraries.
-  media_kit_libs_linux: ^1.0.2                   # GNU/Linux dependency package.
+  media_kit_libs_android_audio: ^1.3.1           # Android package for audio native libraries.
+  media_kit_libs_ios_audio: ^1.1.2               # iOS package for audio native libraries.
+  media_kit_libs_macos_audio: ^1.1.2             # macOS package for audio native libraries.
+  media_kit_libs_windows_audio: ^1.0.6           # Windows package for audio native libraries.
+  media_kit_libs_linux: ^1.1.0                   # GNU/Linux dependency package.
 ```
 
 **Notes:**
@@ -78,11 +78,11 @@ dependencies:
 
 | Platform | Video | Audio | Notes | Demo |
 | -------- | ----- | ----- | ----- | ---- |
-| Android     | ✅    | ✅    | Android 5.0 or above.                | [Download](https://github.com/media-kit/media-kit/releases/download/media_kit-v1.1.1/media_kit_test_android-arm64-v8a.apk) |
-| iOS         | ✅    | ✅    | iOS 9 or above.                      | [Download](https://github.com/media-kit/media-kit/releases/download/media_kit-v1.1.1/media_kit_test_ios_arm64.7z)          |
-| macOS       | ✅    | ✅    | macOS 10.9 or above.                 | [Download](https://github.com/media-kit/media-kit/releases/download/media_kit-v1.1.1/media_kit_test_macos_universal.7z)    |
-| Windows     | ✅    | ✅    | Windows 7 or above.                  | [Download](https://github.com/media-kit/media-kit/releases/download/media_kit-v1.1.1/media_kit_test_win32_x64.7z)          |
-| GNU/Linux   | ✅    | ✅    | Any modern GNU/Linux distribution.   | [Download](https://github.com/media-kit/media-kit/releases/download/media_kit-v1.1.1/media_kit_test_linux_x64.7z)          |
+| Android     | ✅    | ✅    | Android 5.0 or above.                | [Download](https://github.com/media-kit/media-kit/releases/download/media_kit-v1.1.3/media_kit_test_android-arm64-v8a.apk) |
+| iOS         | ✅    | ✅    | iOS 9 or above.                      | [Download](https://github.com/media-kit/media-kit/releases/download/media_kit-v1.1.3/media_kit_test_ios_arm64.7z)          |
+| macOS       | ✅    | ✅    | macOS 10.9 or above.                 | [Download](https://github.com/media-kit/media-kit/releases/download/media_kit-v1.1.3/media_kit_test_macos_universal.7z)    |
+| Windows     | ✅    | ✅    | Windows 7 or above.                  | [Download](https://github.com/media-kit/media-kit/releases/download/media_kit-v1.1.3/media_kit_test_win32_x64.7z)          |
+| GNU/Linux   | ✅    | ✅    | Any modern GNU/Linux distribution.   | [Download](https://github.com/media-kit/media-kit/releases/download/media_kit-v1.1.3/media_kit_test_linux_x64.7z)          |
 | Web         | ✅    | ✅    | Any modern web browser.              | [Visit](https://media-kit.github.io/media-kit/)                                                                            |
 
 
@@ -1666,20 +1666,32 @@ During the build phase, the following warnings are not critical and cannot be si
 
 ### GNU/Linux
 
-System shared libraries from distribution specific user-installed packages are used by-default. You can install these as follows:
+#### Install libmpv
 
-#### Ubuntu/Debian
+System shared libraries from distribution specific user-installed packages are used by-default. **This is how GNU/Linux works.** You can install these as follows:
+
+##### Ubuntu/Debian
 
 ```bash
 sudo apt install libmpv-dev mpv
 ```
 
-#### Packaging
+##### Packaging
 
 There are other ways to bundle these within your app package e.g. within Snap or Flatpak. Few examples:
 
 - [Celluloid](https://github.com/celluloid-player/celluloid/blob/master/flatpak/io.github.celluloid_player.Celluloid.json)
 - [VidCutter](https://github.com/ozmartian/vidcutter/tree/master/\_packaging)
+
+#### Utilize [mimalloc](https://github.com/microsoft/mimalloc)
+
+You should consider replacing the default memory allocator with [mimalloc](https://github.com/microsoft/mimalloc) for [avoiding memory leaks](https://github.com/media-kit/media-kit/issues/68).
+
+This is as simple as [adding one line to `linux/CMakeLists.txt`](https://github.com/media-kit/media-kit/blob/d02a97ce70b316207db024401fb99e3f4509a250/media_kit_test/linux/CMakeLists.txt#L92-L94):
+
+```cmake
+target_link_libraries(${BINARY_NAME} PRIVATE ${MIMALLOC_LIB})
+```
 
 ### Web
 
