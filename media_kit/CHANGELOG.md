@@ -1,3 +1,21 @@
+## 1.1.5
+
+- feat: `Media.memory`
+
+## 1.1.4+1
+
+- docs: document updated
+  - `media_kit_video`
+
+## 1.1.4
+
+- feat: `VideoTrack`/`AudioTrack`/`SubtitleTrack` expose more parameters
+- feat: `NativePlayer.observeProperty` & `NativePlayer.unobserveProperty`
+- fix: `error` stream not being emitted in certain cases
+- fix: pause during buffering makes `Player` not exit buffering
+- fix: DASH having `BaseURL`(s) with special characters not loading
+- fix(windows/android): AV1 support
+
 ## 1.1.3+1
 
 - docs: document updated

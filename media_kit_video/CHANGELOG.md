@@ -1,3 +1,18 @@
+## 1.1.6
+
+- fix: programmatic fullscreen API
+- fix(android): pause upon entering fullscreen
+- fix(android): `waitUntilFirstFrameRenderedNotify` in `FlutterFragmentActivity`
+
+## 1.1.5
+
+- fix(android): `waitUntilFirstFrameRenderedNotify` fallback & release-mode
+
+## 1.1.4
+
+- feat: `Video` `resumeUponEnteringForegroundMode`
+- feat(android): `waitUntilFirstFrameRenderedNotify` implementation
+
 ## 1.1.3
 
 - feat(android): `VideoControllerConfiguration.scale`

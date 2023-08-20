@@ -465,6 +465,44 @@ void main() {
     timeout: Timeout(const Duration(minutes: 2)),
   );
   test(
+    'player-open-playable-media-memory',
+    () async {
+      final player = Player(
+        configuration: PlayerConfiguration(
+          logLevel: MPVLogLevel.info,
+          title: '',
+        ),
+      );
+
+      player.stream.position.listen((e) => print(e));
+
+      final expectPosition = expectAsync1(
+        (value) {
+          print(value);
+          expect(value, isA<Duration>());
+        },
+        count: 1,
+        max: -1,
+      );
+
+      player.stream.position.listen((event) async {
+        print(event);
+        expectPosition(event);
+      });
+
+      final playable = await Media.memory(sources.bytes[0]);
+
+      await player.open(playable);
+
+      // VOLUNTARY DELAY.
+      await Future.delayed(const Duration(seconds: 10));
+
+      await player.dispose();
+    },
+    // TODO: Can't test on web.
+    skip: UniversalPlatform.isWeb,
+  );
+  test(
     'player-open-playable-media-extras',
     () async {
       final player = Player();
@@ -2342,7 +2380,6 @@ void main() {
     'player-buffering-upon-seek',
     () async {
       final player = Player();
-
       player.stream.buffering.listen((e) => print(e));
 
       expect(
@@ -2371,7 +2408,10 @@ void main() {
         if (event > Duration.zero) {
           // VOLUNTARY DELAY.
           await Future.delayed(const Duration(seconds: 5));
-          await player.seek(event - const Duration(seconds: 10));
+
+          print('Seek');
+
+          await player.seek(event - const Duration(seconds: 30));
         }
       });
 
@@ -2381,11 +2421,82 @@ void main() {
         ),
       );
 
-      await Future.delayed(const Duration(seconds: 30));
+      await Future.delayed(const Duration(minutes: 1));
 
       await player.dispose();
     },
-    timeout: Timeout(const Duration(minutes: 1)),
+    timeout: Timeout(const Duration(minutes: 1, seconds: 30)),
+  );
+  test(
+    'player-buffering-pause-play',
+    () async {
+      // When pausing in buffering state, the player must exit buffering state once resumed.
+      // https://github.com/media-kit/media-kit/issues/367
+      final player = Player();
+
+      player.stream.buffering.listen((e) => print(e));
+
+      expect(
+        player.stream.buffering,
+        emitsInOrder(
+          [
+            // Player.open: buffering = true
+            true,
+            // Player.open: buffering = false
+            false,
+            // Player.seek: buffering = true
+            true,
+            // Player.play: buffering = false
+            false,
+            // EOF
+            true,
+            false,
+            // Player.dispose
+            emitsDone,
+          ],
+        ),
+      );
+
+      // Seek to the end of the stream to trigger buffering.
+      player.stream.duration.listen((event) async {
+        if (event > Duration.zero) {
+          // VOLUNTARY DELAY.
+          await Future.delayed(const Duration(seconds: 5));
+
+          print('Seek');
+
+          await player.seek(event - const Duration(seconds: 30));
+
+          print('Buffering...');
+
+          // Wait until buffering is started.
+          await player.stream.buffering.firstWhere((e) => e);
+
+          print('Wait...');
+          print('Pause');
+
+          await player.pause();
+
+          // VOLUNTARY DELAY.
+          await Future.delayed(const Duration(seconds: 5));
+
+          print('Play');
+
+          await player.play();
+        }
+      });
+
+      await player.open(
+        Media(
+          'https://github.com/media-kit/media-kit/assets/28951144/efb4057c-6fd3-4644-a0b1-42d5fb420ce9',
+        ),
+      );
+
+      await Future.delayed(const Duration(minutes: 1));
+
+      await player.dispose();
+    },
+    timeout: Timeout(const Duration(minutes: 1, seconds: 30)),
   );
   test(
     'player-buffering-playlist',

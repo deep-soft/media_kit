@@ -25,6 +25,7 @@ import 'package:media_kit/src/player/native/core/initializer_native_event_loop.d
 
 import 'package:media_kit/src/player/native/utils/isolates.dart';
 import 'package:media_kit/src/player/native/utils/temp_file.dart';
+import 'package:media_kit/src/player/native/utils/find_packages.dart';
 import 'package:media_kit/src/player/native/utils/android_helper.dart';
 import 'package:media_kit/src/player/native/utils/android_asset_loader.dart';
 
@@ -43,6 +44,7 @@ import 'package:media_kit/generated/libmpv/bindings.dart' as generated;
 
 /// Initializes the native backend for package:media_kit.
 void nativeEnsureInitialized({String? libmpv}) {
+  FindPackages.ensureInitialized();
   AndroidHelper.ensureInitialized();
   NativeLibrary.ensureInitialized(libmpv: libmpv);
   InitializerNativeEventLoop.ensureInitialized();
@@ -1528,15 +1530,20 @@ class NativePlayer extends PlatformPlayer {
           prop.ref.format == generated.mpv_format.MPV_FORMAT_FLAG) {
         // Check for [isBufferingStateChangeAllowed] because `pause` causes `core-idle` to be fired.
         final buffering = prop.ref.data.cast<Int8>().value == 1;
-        if (isBufferingStateChangeAllowed) {
-          state = state.copyWith(buffering: buffering);
+        if (buffering) {
+          if (isBufferingStateChangeAllowed) {
+            state = state.copyWith(buffering: true);
+            if (!bufferingController.isClosed) {
+              bufferingController.add(true);
+            }
+          }
+        } else {
+          state = state.copyWith(buffering: false);
           if (!bufferingController.isClosed) {
-            bufferingController.add(buffering);
+            bufferingController.add(false);
           }
         }
-        if (buffering) {
-          isBufferingStateChangeAllowed = true;
-        }
+        isBufferingStateChangeAllowed = true;
       }
       if (prop.ref.name.cast<Utf8>().toDartString() == 'paused-for-cache' &&
           prop.ref.format == generated.mpv_format.MPV_FORMAT_FLAG) {
@@ -2126,6 +2133,11 @@ class NativePlayer extends PlatformPlayer {
               errorController.add(text);
             }
           }
+          if (prefix == 'stream') {
+            if (!errorController.isClosed) {
+              errorController.add(text);
+            }
+          }
         }
         // --------------------------------------------------
       }
@@ -2298,10 +2310,10 @@ class NativePlayer extends PlatformPlayer {
             'osc': 'no',
             'osd-level': '0',
           },
+          'title': configuration.title,
           'demuxer-max-bytes': configuration.bufferSize.toString(),
           'demuxer-max-back-bytes': configuration.bufferSize.toString(),
           if (configuration.vo != null) 'vo': '${configuration.vo}',
-          if (configuration.title != null) 'title': '${configuration.title}',
           'demuxer-lavf-o': [
             'strict=experimental',
             'allowed_extensions=ALL',

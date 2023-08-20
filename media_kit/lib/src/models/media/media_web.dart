@@ -5,8 +5,12 @@
 /// Use of this source code is governed by MIT license that can be found in the LICENSE file.
 // ignore_for_file: library_private_types_in_public_api
 import 'dart:collection';
+import 'dart:typed_data';
+import 'dart:html' as html;
 
 import 'package:media_kit/src/models/playable.dart';
+
+import 'package:media_kit/src/player/web/utils/asset_loader.dart';
 
 /// {@template media}
 ///
@@ -27,12 +31,24 @@ class Media extends Playable {
   /// This has been done to:
   /// 1. Evict the [Media] instance from [cache].
   /// 2. Close the file descriptor created by [AndroidContentUriProvider] to handle content:// URIs on Android.
-  static final Finalizer<String> _finalizer = Finalizer<String>((uri) async {
+  static final Finalizer<_MediaFinalizerContext> _finalizer =
+      Finalizer<_MediaFinalizerContext>((context) async {
+    final uri = context.uri;
+    final memory = context.memory;
     // Decrement reference count.
     ref[uri] = ((ref[uri] ?? 0) - 1).clamp(0, 1 << 32);
     // Remove [Media] instance from [cache] if reference count is 0.
     if (ref[uri] == 0) {
       cache.remove(uri);
+    }
+    // Media.memory : Revoke the object URL.
+    try {
+      if (memory) {
+        html.Url.revokeObjectUrl(uri);
+      }
+    } catch (exeception, stacktrace) {
+      print(exeception);
+      print(stacktrace);
     }
   });
 
@@ -48,6 +64,9 @@ class Media extends Playable {
   ///
   /// Default: `null`.
   final Map<String, String>? httpHeaders;
+
+  /// Whether instance is instantiated from [Media.memory].
+  bool _memory = false;
 
   /// {@macro media}
   Media(
@@ -69,26 +88,35 @@ class Media extends Playable {
       httpHeaders: this.httpHeaders,
     );
     // Attach [this] instance to [Finalizer].
-    _finalizer.attach(this, uri);
+    _finalizer.attach(
+      this,
+      _MediaFinalizerContext(
+        uri,
+        _memory,
+      ),
+    );
+  }
+
+  /// Creates a [Media] instance from [Uint8List].
+  ///
+  /// The [type] parameter is optional and is used to specify the MIME type of the media on web.
+  static Future<Media> memory(
+    Uint8List data, {
+    String? type,
+  }) {
+    final src = html.Url.createObjectUrlFromBlob(html.Blob([data], type));
+    final instance = Media(src);
+    instance._memory = true;
+    return Future.value(instance);
   }
 
   /// Normalizes the passed URI.
   static String normalizeURI(String uri) {
     if (uri.startsWith(_kAssetScheme)) {
       // Handle asset:// scheme. Only for Flutter.
-      final key = encodeAssetKey(uri);
-      return key;
+      return AssetLoader.load(uri);
     }
     return uri;
-  }
-
-  static String encodeAssetKey(String uri) {
-    String key = uri.split(_kAssetScheme).last;
-    if (key.startsWith('/')) {
-      key = key.substring(1);
-    }
-    // https://github.com/media-kit/media-kit/issues/121
-    return key.split('/').map((e) => Uri.encodeComponent(e)).join('/');
   }
 
   /// For comparing with other [Media] instances.
@@ -145,4 +173,17 @@ class _MediaCache {
       'extras: $extras, '
       'httpHeaders: $httpHeaders'
       ')';
+}
+
+/// {@template _media_finalizer_context}
+/// A simple class to pack the required attributes into [Finalizer] argument.
+/// {@endtemplate}
+class _MediaFinalizerContext {
+  final String uri;
+  final bool memory;
+
+  const _MediaFinalizerContext(this.uri, this.memory);
+
+  @override
+  String toString() => '_MediaFinalizerContext(uri: $uri, memory: $memory)';
 }
