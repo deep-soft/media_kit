@@ -1,3 +1,22 @@
+## 1.1.8+2
+
+- docs: document updated `media_kit_video`
+
+## 1.1.8+1
+
+- docs: document updated `media_kit_video`, `media_kit_libs_video` & `media_kit_libs_audio`
+
+## 1.1.8
+
+- fix: reset subtitle state/stream in `Player.setSubtitleTrack`
+- fix: explicit comparator in `PlayerStream` `Stream.distinct`
+- fix: add `rtp` & `udp` to `protocol_whitelist` by default
+- fix: reset `Player` state/stream upon `Player.open`
+- fix: `Player.stop` memory leak
+- fix(web): do not throw `UnsupportedError` w/ `SubtitleTrack.(auto|no)`
+- perf: move `NativePlayer.seek` to `Isolate`
+- build: update `package:uuid` version constraint
+
 ## 1.1.7
 
 - fix: close `PlatformPlayer.playlistModeController`

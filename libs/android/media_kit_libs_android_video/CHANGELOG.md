@@ -1,3 +1,12 @@
+## 1.3.5
+
+- build: revert dependencies
+
+## 1.3.4
+
+- build: bump dependencies
+- fix: DTS support
+
 ## 1.3.3
 
 - build: bump dependencies
