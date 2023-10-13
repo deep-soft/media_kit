@@ -11,6 +11,9 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
+// https://github.com/dart-lang/linter/issues/1381
+// ignore_for_file: close_sinks
+
 /// package:media_kit implementation of [VideoPlayerPlatform].
 ///
 /// References:
@@ -67,12 +70,17 @@ class MediaKitVideoPlayer extends VideoPlayerPlatform {
     final player = Player();
     final completer = Completer();
     final videoController = VideoController(player);
+    // NOTE: [StreamController] without broadcast buffers events.
+    final streamController = StreamController<VideoEvent>();
+    final streamSubscriptions = <StreamSubscription>[];
 
     final textureId = player.hashCode;
 
     _players[textureId] = player;
     _completers[textureId] = completer;
     _videoControllers[textureId] = videoController;
+    _streamControllers[textureId] = streamController;
+    _streamSubscriptions[textureId] = streamSubscriptions;
 
     // --------------------------------------------------
     _initialize(textureId);
@@ -168,7 +176,7 @@ class MediaKitVideoPlayer extends VideoPlayerPlatform {
     return Video(
       key: ValueKey(_videoControllers[textureId]!),
       controller: _videoControllers[textureId]!,
-      wakelock: true,
+      wakelock: false,
       controls: NoVideoControls,
       fill: const Color(0x00000000),
       pauseUponEnteringBackgroundMode: false,
@@ -187,13 +195,9 @@ class MediaKitVideoPlayer extends VideoPlayerPlatform {
 
   /// Initialize the [Stream]s for a given textureId.
   void _initialize(int textureId) {
-    if (_streamControllers[textureId] != null) {
+    if (_streamSubscriptions[textureId]?.isNotEmpty ?? false) {
       return;
     }
-
-    // NOTE: [StreamController] without broadcast buffers events.
-    _streamControllers[textureId] = StreamController<VideoEvent>();
-    _streamSubscriptions[textureId] = <StreamSubscription>[];
 
     final player = _players[textureId];
     final completer = _completers[textureId];
@@ -231,8 +235,10 @@ class MediaKitVideoPlayer extends VideoPlayerPlatform {
       streamSubscriptions.add(
         player.stream.duration.listen(
           (event) {
-            duration = event;
-            notify();
+            if (event > Duration.zero) {
+              duration = event;
+              notify();
+            }
           },
         ),
       );
