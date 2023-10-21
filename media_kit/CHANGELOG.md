@@ -1,3 +1,11 @@
+## 1.1.10+1
+
+- docs: document updated `media_kit_video`
+
+## 1.1.10
+
+- feat: prevent multiple calls to `MediaKit.ensureInitialized`
+
 ## 1.1.9
 
 - fix: `NativePlayer._command`

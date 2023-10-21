@@ -10,8 +10,14 @@ import 'package:media_kit_video/media_kit_video.dart';
 VideoState state(BuildContext context) =>
     VideoStateInheritedWidget.of(context).state;
 
+/// Returns the [ValueNotifier<BuildContext>] associated with the [Video] present in the current [BuildContext].
 ValueNotifier<BuildContext?> contextNotifier(BuildContext context) =>
     VideoStateInheritedWidget.of(context).contextNotifier;
+
+/// Returns the [ValueNotifier<VideoViewParameters>] associated with the [Video] present in the current [BuildContext].
+ValueNotifier<VideoViewParameters> videoViewParametersNotifier(
+        BuildContext context) =>
+    VideoStateInheritedWidget.of(context).videoViewParametersNotifier;
 
 /// Returns the [VideoController] associated with the [Video] present in the current [BuildContext].
 VideoController controller(BuildContext context) =>
