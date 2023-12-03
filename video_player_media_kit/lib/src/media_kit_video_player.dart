@@ -149,7 +149,8 @@ class MediaKitVideoPlayer extends VideoPlayerPlatform {
   /// Sets the volume to a range between 0.0 and 1.0.
   @override
   Future<void> setVolume(int textureId, double volume) async {
-    return _players[textureId]?.setVolume(volume);
+    // NOTE: [volume] is in the range of 0.0 to 1.0 while [setVolume] expects 0.0 to 100.
+    return _players[textureId]?.setVolume(volume * 100);
   }
 
   /// Sets the video position to a [Duration] from the start.
@@ -245,8 +246,8 @@ class MediaKitVideoPlayer extends VideoPlayerPlatform {
       streamSubscriptions.add(
         player.stream.videoParams.listen(
           (event) {
-            width = event.dw ?? 0;
-            height = event.dh ?? 0;
+            width = event.dw;
+            height = event.dh;
             if ((width ?? 0) > 0 && (height ?? 0) > 0) {
               notify();
             }
@@ -257,7 +258,7 @@ class MediaKitVideoPlayer extends VideoPlayerPlatform {
         player.stream.tracks.listen(
           (event) {
             // No video track is available i.e. an audio file.
-            if (event.video.length == 2) {
+            if (event.video.length == 2 && event.audio.length > 2) {
               width = 0;
               height = 0;
               notify();
