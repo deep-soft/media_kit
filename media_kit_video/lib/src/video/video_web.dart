@@ -4,7 +4,9 @@
 /// All rights reserved.
 /// Use of this source code is governed by MIT license that can be found in the LICENSE file.
 // ignore_for_file: avoid_web_libraries_in_flutter
-import 'dart:html';
+import 'dart:js_interop';
+
+import 'package:web/web.dart';
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -135,7 +137,7 @@ class Video extends StatefulWidget {
 
 class VideoState extends State<Video> with WidgetsBindingObserver {
   late final _contextNotifier = DisposeSafeNotifier<BuildContext?>(null);
-  late ValueNotifier<VideoViewParameters> _videoViewParametersNotifier;
+  late ValueNotifier<VideoViewParameters> videoViewParametersNotifier;
   late bool _disposeNotifiers;
   final _subtitleViewKey = GlobalKey<SubtitleViewState>();
   final _wakelock = Wakelock();
@@ -186,8 +188,8 @@ class VideoState extends State<Video> with WidgetsBindingObserver {
     /* VideoControlsBuilder? */ dynamic controls,
     SubtitleViewConfiguration? subtitleViewConfiguration,
   }) {
-    _videoViewParametersNotifier.value =
-        _videoViewParametersNotifier.value.copyWith(
+    videoViewParametersNotifier.value =
+        videoViewParametersNotifier.value.copyWith(
       width: width,
       height: height,
       fit: fit,
@@ -201,8 +203,47 @@ class VideoState extends State<Video> with WidgetsBindingObserver {
   }
 
   @override
+  void didUpdateWidget(Video oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final currentParams = videoViewParametersNotifier.value;
+
+    final newParams = currentParams.copyWith(
+      width:
+          widget.width != oldWidget.width ? widget.width : currentParams.width,
+      height: widget.height != oldWidget.height
+          ? widget.height
+          : currentParams.height,
+      fit: widget.fit != oldWidget.fit ? widget.fit : currentParams.fit,
+      fill: widget.fill != oldWidget.fill ? widget.fill : currentParams.fill,
+      alignment: widget.alignment != oldWidget.alignment
+          ? widget.alignment
+          : currentParams.alignment,
+      aspectRatio: widget.aspectRatio != oldWidget.aspectRatio
+          ? widget.aspectRatio
+          : currentParams.aspectRatio,
+      filterQuality: widget.filterQuality != oldWidget.filterQuality
+          ? widget.filterQuality
+          : currentParams.filterQuality,
+      controls: widget.controls != oldWidget.controls
+          ? widget.controls
+          : currentParams.controls,
+      subtitleViewConfiguration: widget.subtitleViewConfiguration !=
+              oldWidget.subtitleViewConfiguration
+          ? widget.subtitleViewConfiguration
+          : currentParams.subtitleViewConfiguration,
+    );
+
+    if (newParams != currentParams) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        videoViewParametersNotifier.value = newParams;
+      });
+    }
+  }
+
+  @override
   void didChangeDependencies() {
-    _videoViewParametersNotifier =
+    videoViewParametersNotifier =
         media_kit_video_controls.VideoStateInheritedWidget.maybeOf(
               context,
             )?.videoViewParametersNotifier ??
@@ -246,6 +287,7 @@ class VideoState extends State<Video> with WidgetsBindingObserver {
         }
       }
     }
+    super.didChangeAppLifecycleState(state);
   }
 
   @override
@@ -308,7 +350,7 @@ class VideoState extends State<Video> with WidgetsBindingObserver {
       subscription.cancel();
     }
     if (_disposeNotifiers) {
-      _videoViewParametersNotifier.dispose();
+      videoViewParametersNotifier.dispose();
       _contextNotifier.dispose();
       VideoStateInheritedWidgetContextNotifierState.fallback.remove(this);
     }
@@ -327,9 +369,9 @@ class VideoState extends State<Video> with WidgetsBindingObserver {
     return media_kit_video_controls.VideoStateInheritedWidget(
       state: this as dynamic,
       contextNotifier: _contextNotifier,
-      videoViewParametersNotifier: _videoViewParametersNotifier,
+      videoViewParametersNotifier: videoViewParametersNotifier,
       child: ValueListenableBuilder<VideoViewParameters>(
-        valueListenable: _videoViewParametersNotifier,
+        valueListenable: videoViewParametersNotifier,
         builder: (context, videoViewParameters, _) {
           return Container(
             clipBehavior: Clip.none,
@@ -410,7 +452,7 @@ class VideoState extends State<Video> with WidgetsBindingObserver {
 /// Makes the native window enter fullscreen.
 Future<void> defaultEnterNativeFullscreen() async {
   try {
-    await document.documentElement?.requestFullscreen();
+    await document.documentElement?.requestFullscreen().toDart;
   } catch (exception, stacktrace) {
     debugPrint(exception.toString());
     debugPrint(stacktrace.toString());
@@ -420,7 +462,7 @@ Future<void> defaultEnterNativeFullscreen() async {
 /// Makes the native window exit fullscreen.
 Future<void> defaultExitNativeFullscreen() async {
   try {
-    document.exitFullscreen();
+    await document.exitFullscreen().toDart;
   } catch (exception, stacktrace) {
     debugPrint(exception.toString());
     debugPrint(stacktrace.toString());
